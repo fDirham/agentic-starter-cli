@@ -5,7 +5,7 @@
 - [x] Add error handling for bad tool calls
 - [x] Add error handling for open ai not working
 - [x] Add actual searching capabilities
-- [] Add debug tools to add logs to file
+- [x] Add debug tools to add logs to file
 
 # How to run
 

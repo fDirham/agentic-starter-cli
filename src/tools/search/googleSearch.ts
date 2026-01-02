@@ -1,3 +1,4 @@
+import { logError } from "../../utils/logger";
 import { type SearchProvider, type SearchResult } from "./provider";
 
 /**
@@ -80,6 +81,9 @@ export class GoogleSearchProvider implements SearchProvider {
           }
         }
       } catch (err) {
+        logError(
+          "Error parsing a Google search result: " + (err as Error).message
+        );
         // Skip malformed results
         continue;
       }

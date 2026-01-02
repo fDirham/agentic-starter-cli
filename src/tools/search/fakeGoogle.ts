@@ -1,7 +1,7 @@
 import { type SearchProvider } from "./provider";
 
 export class FakeGoogleSearchProvider implements SearchProvider {
-  async search(query: string) {
+  async search(_query: string) {
     return [
       {
         title: "Expo SQLite Migrations",

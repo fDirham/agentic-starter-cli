@@ -1,7 +1,5 @@
 import { type LLM, type Message } from "../llm/types";
 import { type Tool } from "../tools/types";
-import * as fs from "fs/promises";
-import * as path from "path";
 import { logDebug } from "../utils/logger";
 
 export class Agent {

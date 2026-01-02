@@ -1,6 +1,28 @@
 # Agentic CLI Starter
 
-An interactive CLI chatbot built with TypeScript that demonstrates agentic AI patterns with tool-calling capabilities.
+## Overview
+
+A CLI AI chatbot that demonstrates agentic AI patterns with tool-calling capabilities.
+
+I vibe coded this to understand apps like Claude Code better.
+
+## Ways to extend / configure:
+
+- Add more tools
+- Add more complex history management logic
+- Add more LLM models
+- Better agentic reasoning
+
+## High level inner-workings
+
+- index.ts starts a REPL loop
+  - `repl.ts` responsible for coordinating user input, agents, and UI
+- REPL calls our agent
+- Agent calls LLM with chat history + tools
+- On a tool call, our agent calls the respective tools and appends results to chat history
+- Repeat agent call until agent does not need a tool call
+- Once agent responds without tool call, REPL updates UI to inform user the results
+- The loop starts again
 
 ## Quick Start
 
@@ -19,13 +41,8 @@ npx tsx src/index.ts
 - **Tool Integration**: Agent can use tools (web search) to answer queries
 - **Conversation History**: Maintains context across multiple turns
 - **Visual Feedback**: "Thinking..." indicator while agent processes
-
-## Slash Commands
-
-- `/help` - Show available commands
-- `/info` - Display session information (messages, tools)
-- `/clear` - Clear conversation history
-- `/exit` - Exit the CLI
+- **Error Handling**: Tool or LLM failures are accounted for.
+- **File logging**: Logs are saved to file per chatting session using a custom logger.
 
 ## Usage Example
 
@@ -48,23 +65,4 @@ Goodbye!
 
 ## Architecture
 
-See [CLAUDE.md](CLAUDE.md) for detailed architecture documentation.
-
-## Project Structure
-
-```
-src/
-├── cli/
-│   ├── repl.ts       # Interactive REPL loop
-│   ├── commands.ts   # Slash command handlers
-│   └── ui.ts         # Terminal UI utilities
-├── agent/
-│   └── agent.ts      # Agent with conversation history
-├── llm/
-│   ├── types.ts      # LLM interfaces
-│   └── mockLLM.ts    # Mock LLM implementation
-├── tools/
-│   ├── types.ts      # Tool interfaces
-│   └── search/       # Web search tool
-└── index.ts          # Entry point
-```
+See [AGENT.md](AGENT.md) for detailed architecture documentation.

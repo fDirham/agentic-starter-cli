@@ -24,7 +24,7 @@ class Logger {
       mkdirSync(join(process.cwd(), "logs"), { recursive: true });
     } catch (error) {
       // If directory already exists, ignore the error
-      if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
+      if ((error as any).code !== "EEXIST") {
         throw error;
       }
     }
@@ -120,7 +120,8 @@ const logger = new Logger();
 export { logger };
 
 // Export convenience functions that use the singleton
-export const log = (message: string, level?: string) => logger.log(message, level);
+export const log = (message: string, level?: string) =>
+  logger.log(message, level);
 export const logInfo = (message: string) => logger.info(message);
 export const logError = (message: string) => logger.error(message);
 export const logDebug = (message: string) => logger.debug(message);

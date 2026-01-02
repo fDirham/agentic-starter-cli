@@ -1,5 +1,4 @@
 import type { Agent } from "../agent/agent";
-import type { Message } from "../llm/types";
 
 /**
  * Context passed to command handlers
