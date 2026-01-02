@@ -3,15 +3,15 @@ import { Agent } from "./agent/agent";
 import { OpenAILLM } from "./llm/openaiLLM";
 import { createWebSearchTool } from "./tools/search/webSearch";
 import { REPL } from "./cli/repl";
-import { GoogleSearchProvider } from "./tools/search/googleSearch";
 import { logger, logInfo } from "./utils/logger";
+import { FakeGoogleSearchProvider } from "./tools/search/fakeGoogle";
 // import { ErrorLLM } from "./llm/errorLLM";
 // import { ErrorSearchProvider } from "./tools/search/errorSearch";
 
 const llm = new OpenAILLM();
 // const llm = new ErrorLLM();
 // const searchProvider = new ErrorSearchProvider();
-const searchProvider = new GoogleSearchProvider();
+const searchProvider = new FakeGoogleSearchProvider();
 const searchTool = createWebSearchTool(searchProvider);
 
 const agent = new Agent(

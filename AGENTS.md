@@ -160,7 +160,7 @@ this.commandRegistry.register("/history", historyCommand);
 
 Simply edit the command handler in [src/cli/commands.ts](src/cli/commands.ts). All commands are exported as named exports (`exitCommand`, `clearCommand`, `helpCommand`, `infoCommand`).
 
-### Logging
+## Logging
 
 NEVER USE `console.log` or `console.error`
 Use functions defined in `utils/logger` to log to a log file.
@@ -175,3 +175,7 @@ export const logError = (message: string) => logger.error(message);
 export const logDebug = (message: string) => logger.debug(message);
 export const logWarn = (message: string) => logger.warn(message);
 ```
+
+## Testing
+
+This project uses vitest. Add test files in `/test/`

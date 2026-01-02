@@ -24,6 +24,8 @@ Starter code for a CLI-based AI agentic chatbot with tool-calling capabilities. 
 
 ## Quick Start
 
+Add your OpenAI API Key in a .env to get things working.
+
 ```bash
 # Install dependencies
 npm install
