@@ -103,11 +103,3 @@ Session Info:
   Tools available: ${toolNames.length > 0 ? toolNames.join(", ") : "none"}
   `);
 };
-
-/**
- * /print_full command - saves full conversation history to last_chat.txt
- */
-export const printFullCommand: CommandHandler = async (ctx) => {
-  await ctx.agent.saveFullHistory();
-  console.log("Full conversation history saved to last_chat.txt");
-};

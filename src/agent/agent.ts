@@ -100,12 +100,16 @@ export class Agent {
             tool_call_id: toolCall.id,
           });
         }
+
+        await this.saveFullHistory();
       } else {
         // Add assistant response to history
         this.addToHistory({
           role: "assistant",
           content: response.content,
         });
+
+        await this.saveFullHistory();
 
         return response.content;
       }
@@ -115,7 +119,7 @@ export class Agent {
   /**
    * Save full conversation history to file for debugging
    */
-  async saveFullHistory(): Promise<void> {
+  private async saveFullHistory(): Promise<void> {
     try {
       const historyText = this.fullHistory
         .map((msg, index) => {

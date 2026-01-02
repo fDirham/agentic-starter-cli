@@ -7,7 +7,6 @@ import {
   clearCommand,
   helpCommand,
   infoCommand,
-  printFullCommand,
 } from "./commands";
 import { UI } from "./ui";
 
@@ -38,7 +37,6 @@ export class REPL {
     this.commandRegistry.register("/clear", clearCommand);
     this.commandRegistry.register("/help", helpCommand);
     this.commandRegistry.register("/info", infoCommand);
-    this.commandRegistry.register("/print_full", printFullCommand);
   }
 
   /**
