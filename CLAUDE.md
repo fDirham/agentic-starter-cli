@@ -16,11 +16,30 @@ This is an agentic CLI starter project that demonstrates building AI agents with
 ## Running the Project
 
 ```bash
-# Run the CLI with a query
-npx ts-node src/index.ts <query>
+# Start the interactive chat CLI
+npx tsx src/index.ts
 ```
 
-The CLI accepts a query as command-line arguments and runs the agent to process it.
+The CLI starts an interactive REPL (Read-Eval-Print Loop) where you can chat with the agent. Type messages to chat or use slash commands for special actions.
+
+## Interactive CLI Features
+
+**REPL System** ([src/cli/repl.ts](src/cli/repl.ts)):
+- Interactive chat loop using Node.js `readline/promises`
+- Persistent conversation history across multiple turns
+- Visual "thinking..." indicator while agent processes requests
+- Graceful error handling and Ctrl+C shutdown
+
+**Slash Commands** ([src/cli/commands.ts](src/cli/commands.ts)):
+- `/exit` - Exit the CLI
+- `/clear` - Clear conversation history (preserves system prompt)
+- `/help` - Show available commands
+- `/info` - Display session information (message count, available tools)
+
+**Conversation Management**:
+- Automatically maintains last 10 messages + system prompt
+- Older messages are pruned to prevent token overflow
+- System prompt is always preserved
 
 ## Core Architecture
 
@@ -42,6 +61,7 @@ This loop continues until the LLM decides to provide a final response instead of
 - `LLM` interface defines contract for language models
 - `LLMResponse` is a discriminated union: either `tool_call` or `final`
 - Messages use roles: `system`, `user`, `assistant`, `tool`
+- Agent maintains conversation history internally for multi-turn conversations
 - Currently implemented with `MockLLM` ([src/llm/mockLLM.ts](src/llm/mockLLM.ts)) which hardcodes behavior for demo purposes
 
 **Tool System** ([src/tools/types.ts](src/tools/types.ts)):
@@ -72,16 +92,64 @@ From [LEARNINGS.md](LEARNINGS.md):
 - Target: ESNext with bundler module resolution
 - Notable strictness: `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`
 
-## Extending the Agent
+## Extending the System
 
-**Adding a new tool:**
+### Adding a New Tool
 
 1. Define input schema with Zod
 2. Implement `Tool<TInput, TOutput>` interface
 3. Pass tool instance to Agent constructor
 
-**Replacing the LLM:**
+### Replacing the LLM
 
 1. Implement the `LLM` interface ([src/llm/types.ts](src/llm/types.ts))
 2. Parse tool schemas and return proper `LLMResponse` discriminated union
 3. Inject into Agent instead of MockLLM
+
+### Adding or Modifying Slash Commands
+
+**Adding a new command:**
+
+1. Create a command handler in [src/cli/commands.ts](src/cli/commands.ts):
+   ```typescript
+   export const myCommand: CommandHandler = (ctx) => {
+     // Access agent via ctx.agent
+     console.log("Command output here");
+   };
+   ```
+
+2. Register the command in [src/cli/repl.ts](src/cli/repl.ts) in the `registerCommands()` method:
+   ```typescript
+   this.commandRegistry.register("/mycommand", myCommand);
+   ```
+
+3. Update the `/help` command in [src/cli/commands.ts](src/cli/commands.ts) to document your new command
+
+**Command handler signature:**
+```typescript
+type CommandHandler = (context: CommandContext) => void | Promise<void>;
+
+interface CommandContext {
+  agent: Agent;  // Access to agent instance for history, tools, etc.
+}
+```
+
+**Example - Adding a `/history` command:**
+
+```typescript
+// In src/cli/commands.ts
+export const historyCommand: CommandHandler = (ctx) => {
+  const messages = ctx.agent.getHistory();
+  console.log("\nConversation History:");
+  messages.forEach((msg, i) => {
+    console.log(`${i}. [${msg.role}]: ${msg.content}`);
+  });
+};
+
+// In src/cli/repl.ts registerCommands()
+this.commandRegistry.register("/history", historyCommand);
+```
+
+**Modifying existing commands:**
+
+Simply edit the command handler in [src/cli/commands.ts](src/cli/commands.ts). All commands are exported as named exports (`exitCommand`, `clearCommand`, `helpCommand`, `infoCommand`).
