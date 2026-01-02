@@ -82,10 +82,11 @@ export const clearCommand: CommandHandler = (ctx) => {
 export const helpCommand: CommandHandler = () => {
   console.log(`
 Available commands:
-  /exit  - Exit the CLI
-  /clear - Clear conversation history
-  /help  - Show this help message
-  /info  - Show session information
+  /exit       - Exit the CLI
+  /clear      - Clear conversation history
+  /help       - Show this help message
+  /info       - Show session information
+  /print_full - Save full conversation history to last_chat.txt
   `);
 };
 
@@ -101,4 +102,12 @@ Session Info:
   Messages in history: ${history.length}
   Tools available: ${toolNames.length > 0 ? toolNames.join(", ") : "none"}
   `);
+};
+
+/**
+ * /print_full command - saves full conversation history to last_chat.txt
+ */
+export const printFullCommand: CommandHandler = async (ctx) => {
+  await ctx.agent.saveFullHistory();
+  console.log("Full conversation history saved to last_chat.txt");
 };

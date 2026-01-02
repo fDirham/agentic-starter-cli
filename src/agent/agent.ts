@@ -1,8 +1,11 @@
 import { type LLM, type Message } from "../llm/types";
 import { type Tool } from "../tools/types";
+import * as fs from "fs/promises";
+import * as path from "path";
 
 export class Agent {
   private conversationHistory: Message[] = [];
+  private fullHistory: Message[] = []; // Separate full history for debugging
   private readonly MAX_HISTORY = 10;
 
   constructor(
@@ -11,20 +14,29 @@ export class Agent {
     private systemPrompt: string
   ) {
     // Initialize with system prompt
-    this.conversationHistory.push({
+    this.addToHistory({
       role: "system",
       content: this.systemPrompt,
     });
   }
 
+  /**
+   * Helper to add messages to both conversation history and full history
+   */
+  private addToHistory(message: Message): void {
+    this.conversationHistory.push(message);
+    this.fullHistory.push(message);
+  }
+
   async run(userInput: string): Promise<string> {
     // Add user message to history
-    this.conversationHistory.push({
+    this.addToHistory({
       role: "user",
       content: userInput,
     });
 
     // Enforce history cap (keep system prompt + last MAX_HISTORY messages)
+    // Note: fullHistory is never capped, only conversationHistory
     if (this.conversationHistory.length > this.MAX_HISTORY + 1) {
       const systemPrompt = this.conversationHistory[0];
       if (!systemPrompt) throw new Error("System prompt missing");
@@ -35,38 +47,109 @@ export class Agent {
       ];
     }
 
-    while (true) {
-      const toolSchemas = this.tools.map((tool) => ({
+    const toolSchemas = this.tools.map((tool) => {
+      // Convert Zod schema to JSON Schema if it has toJSONSchema method
+      let parameters: unknown = tool.schema;
+      if (
+        parameters &&
+        typeof parameters === "object" &&
+        "toJSONSchema" in parameters &&
+        typeof parameters.toJSONSchema === "function"
+      ) {
+        parameters = parameters.toJSONSchema();
+      }
+
+      return {
         name: tool.name,
         description: tool.description,
-        parameters: tool.schema,
-      }));
+        parameters,
+      };
+    });
 
+    while (true) {
       const response = await this.llm.chat(
         this.conversationHistory,
         toolSchemas
       );
 
       if (response.type === "tool_call") {
-        const tool = this.tools.find((t) => t.name === response.toolName);
-        if (!tool) throw new Error("Unknown tool");
-
-        const parsed = tool.schema.parse(response.arguments);
-        const result = await tool.execute(parsed);
-
-        this.conversationHistory.push({
-          role: "tool",
-          name: tool.name,
-          content: JSON.stringify(result),
+        // Add the assistant's tool call message to history first
+        this.addToHistory({
+          role: "assistant",
+          content: "",
+          tool_calls: response.rawToolCalls,
         });
+
+        // Execute ALL tool calls and add their results
+        for (const toolCall of response.rawToolCalls) {
+          const tool = this.tools.find((t) => t.name === toolCall.name);
+          if (!tool) {
+            throw new Error(`Unknown tool: ${toolCall.name}`);
+          }
+
+          // Parse the arguments for this specific tool call
+          const args = JSON.parse(toolCall.arguments);
+          const parsed = tool.schema.parse(args);
+          const result = await tool.execute(parsed);
+
+          // Add the tool result with the tool_call_id
+          this.addToHistory({
+            role: "tool",
+            name: tool.name,
+            content: JSON.stringify(result),
+            tool_call_id: toolCall.id,
+          });
+        }
       } else {
         // Add assistant response to history
-        this.conversationHistory.push({
+        this.addToHistory({
           role: "assistant",
           content: response.content,
         });
+
         return response.content;
       }
+    }
+  }
+
+  /**
+   * Save full conversation history to file for debugging
+   */
+  async saveFullHistory(): Promise<void> {
+    try {
+      const historyText = this.fullHistory
+        .map((msg, index) => {
+          const header = `[${index}] ${msg.role.toUpperCase()}`;
+          let content = `Content: ${msg.content}`;
+
+          if (msg.tool_calls) {
+            content += `\nTool Calls: ${JSON.stringify(
+              msg.tool_calls,
+              null,
+              2
+            )}`;
+          }
+
+          if (msg.tool_call_id) {
+            content += `\nTool Call ID: ${msg.tool_call_id}`;
+          }
+
+          if (msg.name) {
+            content += `\nTool Name: ${msg.name}`;
+          }
+
+          return `${header}\n${content}\n${"=".repeat(80)}`;
+        })
+        .join("\n\n");
+
+      await fs.writeFile(
+        path.join(process.cwd(), "last_chat.txt"),
+        historyText,
+        "utf-8"
+      );
+    } catch (error) {
+      // Silently fail - don't break the chat if file writing fails
+      console.error("Failed to save chat history:", error);
     }
   }
 
@@ -85,8 +168,9 @@ export class Agent {
     if (!systemPrompt) {
       throw new Error("System prompt missing");
     }
-    // TypeScript now knows systemPrompt is Message, not undefined
+    // Clear both histories
     this.conversationHistory = [systemPrompt as Message];
+    this.fullHistory = [systemPrompt as Message];
   }
 
   /**

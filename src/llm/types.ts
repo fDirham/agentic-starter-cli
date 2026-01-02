@@ -1,9 +1,17 @@
 export type Role = "system" | "user" | "assistant" | "tool";
 
+export interface ToolCall {
+  id: string;
+  name: string;
+  arguments: string;
+}
+
 export interface Message {
   role: Role;
   content: string;
   name?: string; // used for tool messages
+  tool_calls?: ToolCall[]; // used for assistant messages with tool calls
+  tool_call_id?: string; // used for tool response messages
 }
 
 export interface ToolSchema {
@@ -13,7 +21,13 @@ export interface ToolSchema {
 }
 
 export type LLMResponse =
-  | { type: "tool_call"; toolName: string; arguments: unknown }
+  | {
+      type: "tool_call";
+      toolName: string;
+      arguments: unknown;
+      toolCallId: string;
+      rawToolCalls: ToolCall[];
+    }
   | { type: "final"; content: string };
 
 export interface LLM {

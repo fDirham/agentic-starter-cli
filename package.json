@@ -12,6 +12,8 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "dotenv": "^17.2.3",
+    "openai": "^6.15.0",
     "typescript": "^5.9.3",
     "zod": "^4.3.4"
   },

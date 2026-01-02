@@ -9,10 +9,19 @@ export class MockLLM implements LLM {
     }
 
     if (last.role === "user") {
+      const toolCallId = "mock_call_" + Date.now();
       return {
         type: "tool_call",
         toolName: "web_search",
         arguments: { query: last.content },
+        toolCallId,
+        rawToolCalls: [
+          {
+            id: toolCallId,
+            name: "web_search",
+            arguments: JSON.stringify({ query: last.content }),
+          },
+        ],
       };
     }
 

@@ -1,8 +1,10 @@
 # TODO
 
-- Allow user to keep chatting and using a tool
-- Add actual OpenAI API
-- Add actual searching capabilities
+- [x] Allow user to keep chatting and using a tool
+- [x] Add actual OpenAI API
+- [] Add error handling for bad tool calls
+- [] Add error handling for open ai not working
+- [] Add actual searching capabilities
 
 # How to run
 

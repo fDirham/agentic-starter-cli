@@ -7,6 +7,7 @@ import {
   clearCommand,
   helpCommand,
   infoCommand,
+  printFullCommand,
 } from "./commands";
 import { UI } from "./ui";
 
@@ -37,6 +38,7 @@ export class REPL {
     this.commandRegistry.register("/clear", clearCommand);
     this.commandRegistry.register("/help", helpCommand);
     this.commandRegistry.register("/info", infoCommand);
+    this.commandRegistry.register("/print_full", printFullCommand);
   }
 
   /**
@@ -45,6 +47,7 @@ export class REPL {
   private setupSignalHandlers(): void {
     process.on("SIGINT", () => {
       console.log("\nGoodbye!");
+      this.stop();
       process.exit(0);
     });
   }
@@ -80,6 +83,14 @@ export class REPL {
         const response = await this.agent.run(input);
         UI.showAgentResponse(response);
       } catch (error) {
+        // Handle readline closure gracefully (e.g., from Ctrl+C)
+        if (
+          error instanceof Error &&
+          error.message.includes("readline was closed")
+        ) {
+          break;
+        }
+
         UI.clearLine();
         console.error(
           "Error:",
