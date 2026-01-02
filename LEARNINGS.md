@@ -1,2 +1,0 @@
-- Use zod to easily turn unstructured json objects into something structured
-  - Useful for working with LLMs
