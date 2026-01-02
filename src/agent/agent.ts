@@ -28,6 +28,76 @@ export class Agent {
     this.fullHistory.push(message);
   }
 
+  /**
+   * Execute a tool with retry logic (up to 3 attempts)
+   */
+  private async executeToolWithRetry<TInput, TOutput>(
+    tool: Tool<TInput, TOutput>,
+    input: TInput,
+    toolCallId: string,
+    maxRetries: number = 3
+  ): Promise<TOutput | { error: string }> {
+    let lastError: Error | unknown;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await tool.execute(input);
+      } catch (error) {
+        lastError = error;
+
+        // If this isn't the last attempt, continue to retry
+        if (attempt < maxRetries) {
+          continue;
+        }
+      }
+    }
+
+    // All retries failed - return error object
+    const errorMessage =
+      lastError instanceof Error ? lastError.message : "Unknown error occurred";
+
+    return {
+      error: `Tool execution failed after ${maxRetries} attempts: ${errorMessage}`,
+    };
+  }
+
+  /**
+   * Call LLM with retry logic (up to 3 attempts)
+   */
+  private async callLLMWithRetry(
+    messages: Message[],
+    toolSchemas: any[],
+    maxRetries: number = 3
+  ): Promise<
+    | { success: true; response: Awaited<ReturnType<LLM["chat"]>> }
+    | { success: false; error: string }
+  > {
+    let lastError: Error | unknown;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await this.llm.chat(messages, toolSchemas);
+        return { success: true, response };
+      } catch (error) {
+        lastError = error;
+
+        // If this isn't the last attempt, continue to retry
+        if (attempt < maxRetries) {
+          continue;
+        }
+      }
+    }
+
+    // All retries failed - return error
+    const errorMessage =
+      lastError instanceof Error ? lastError.message : "Unknown error occurred";
+
+    return {
+      success: false,
+      error: `LLM call failed after ${maxRetries} attempts: ${errorMessage}`,
+    };
+  }
+
   async run(userInput: string): Promise<string> {
     // Add user message to history
     this.addToHistory({
@@ -67,10 +137,27 @@ export class Agent {
     });
 
     while (true) {
-      const response = await this.llm.chat(
+      const llmResult = await this.callLLMWithRetry(
         this.conversationHistory,
         toolSchemas
       );
+
+      // Handle LLM failure
+      if (!llmResult.success) {
+        const errorMessage = `I'm sorry, I encountered an error while processing your request. ${llmResult.error}`;
+
+        // Add error response to history
+        this.addToHistory({
+          role: "assistant",
+          content: errorMessage,
+        });
+
+        await this.saveFullHistory();
+
+        return errorMessage;
+      }
+
+      const response = llmResult.response;
 
       if (response.type === "tool_call") {
         // Add the assistant's tool call message to history first
@@ -84,13 +171,25 @@ export class Agent {
         for (const toolCall of response.rawToolCalls) {
           const tool = this.tools.find((t) => t.name === toolCall.name);
           if (!tool) {
-            throw new Error(`Unknown tool: ${toolCall.name}`);
+            this.addToHistory({
+              role: "tool",
+              name: toolCall.name,
+              content: JSON.stringify({ error: "Tool not found" }),
+              tool_call_id: toolCall.id,
+            });
+            continue;
           }
 
           // Parse the arguments for this specific tool call
           const args = JSON.parse(toolCall.arguments);
           const parsed = tool.schema.parse(args);
-          const result = await tool.execute(parsed);
+
+          // Execute tool with retry logic
+          const result = await this.executeToolWithRetry(
+            tool,
+            parsed,
+            toolCall.id
+          );
 
           // Add the tool result with the tool_call_id
           this.addToHistory({
