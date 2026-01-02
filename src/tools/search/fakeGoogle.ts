@@ -1,6 +1,6 @@
 import { type SearchProvider } from "./provider";
 
-export class FakeGoogleSearch implements SearchProvider {
+export class FakeGoogleSearchProvider implements SearchProvider {
   async search(query: string) {
     return [
       {

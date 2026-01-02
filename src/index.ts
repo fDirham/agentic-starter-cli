@@ -2,20 +2,16 @@ import "dotenv/config";
 import { Agent } from "./agent/agent";
 import { OpenAILLM } from "./llm/openaiLLM";
 import { createWebSearchTool } from "./tools/search/webSearch";
-import { FakeGoogleSearch } from "./tools/search/fakeGoogle";
 import { REPL } from "./cli/repl";
+import { GoogleSearchProvider } from "./tools/search/googleSearch";
+// import { ErrorLLM } from "./llm/errorLLM";
+// import { ErrorSearchProvider } from "./tools/search/errorSearch";
 
-// Load OpenAI API key from environment
-const apiKey = process.env.OPENAI_API_KEY;
-if (!apiKey) {
-  console.error("Error: OPENAI_API_KEY not found in environment variables.");
-  console.error("Please create a .env file with your OpenAI API key.");
-  console.error("See .env.example for reference.");
-  process.exit(1);
-}
-
-const llm = new OpenAILLM(apiKey);
-const searchTool = createWebSearchTool(new FakeGoogleSearch());
+const llm = new OpenAILLM();
+// const llm = new ErrorLLM();
+// const searchProvider = new ErrorSearchProvider();
+const searchProvider = new GoogleSearchProvider();
+const searchTool = createWebSearchTool(searchProvider);
 
 const agent = new Agent(
   llm,

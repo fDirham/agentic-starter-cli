@@ -2,9 +2,10 @@
 
 - [x] Allow user to keep chatting and using a tool
 - [x] Add actual OpenAI API
-- [] Add error handling for bad tool calls
-- [] Add error handling for open ai not working
-- [] Add actual searching capabilities
+- [x] Add error handling for bad tool calls
+- [x] Add error handling for open ai not working
+- [x] Add actual searching capabilities
+- [] Add debug tools to add logs to file
 
 # How to run
 

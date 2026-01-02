@@ -14,9 +14,13 @@ export class OpenAILLM implements LLM {
   private client: OpenAI;
   private model: string;
 
-  constructor(apiKey: string, model: string = "gpt-4o-mini") {
+  constructor() {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error("OPENAI_API_KEY not found in environment variables.");
+    }
     this.client = new OpenAI({ apiKey });
-    this.model = model;
+    this.model = "gpt-4o-mini";
   }
 
   async chat(messages: Message[], tools: ToolSchema[]): Promise<LLMResponse> {
