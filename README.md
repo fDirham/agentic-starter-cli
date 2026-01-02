@@ -2,9 +2,7 @@
 
 ## Overview
 
-A CLI AI chatbot that demonstrates agentic AI patterns with tool-calling capabilities.
-
-I vibe coded this to understand apps like Claude Code better.
+Starter code for a CLI-based AI agentic chatbot with tool-calling capabilities. Vibe coded this to understand apps like Claude Code better.
 
 ## Ways to extend / configure:
 
@@ -15,7 +13,7 @@ I vibe coded this to understand apps like Claude Code better.
 
 ## High level inner-workings
 
-- index.ts starts a REPL loop
+- index.ts starts a Read-Event-Print Loop
   - `repl.ts` responsible for coordinating user input, agents, and UI
 - REPL calls our agent
 - Agent calls LLM with chat history + tools
@@ -31,7 +29,7 @@ I vibe coded this to understand apps like Claude Code better.
 npm install
 
 # Start the interactive chat
-npx tsx src/index.ts
+npm run start
 ```
 
 ## Features
