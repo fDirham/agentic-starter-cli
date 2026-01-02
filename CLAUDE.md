@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Things to always do
 
 - Always plan and not edge cases and possible logical flaws when asked to implement something.
-  - Ask for user sign off before executing such a plan.
+- Ask for user sign off before executing such a plan.
 
 # Project stuff
 
@@ -25,18 +25,21 @@ The CLI starts an interactive REPL (Read-Eval-Print Loop) where you can chat wit
 ## Interactive CLI Features
 
 **REPL System** ([src/cli/repl.ts](src/cli/repl.ts)):
+
 - Interactive chat loop using Node.js `readline/promises`
 - Persistent conversation history across multiple turns
 - Visual "thinking..." indicator while agent processes requests
 - Graceful error handling and Ctrl+C shutdown
 
 **Slash Commands** ([src/cli/commands.ts](src/cli/commands.ts)):
+
 - `/exit` - Exit the CLI
 - `/clear` - Clear conversation history (preserves system prompt)
 - `/help` - Show available commands
 - `/info` - Display session information (message count, available tools)
 
 **Conversation Management**:
+
 - Automatically maintains last 10 messages + system prompt
 - Older messages are pruned to prevent token overflow
 - System prompt is always preserved
@@ -111,6 +114,7 @@ From [LEARNINGS.md](LEARNINGS.md):
 **Adding a new command:**
 
 1. Create a command handler in [src/cli/commands.ts](src/cli/commands.ts):
+
    ```typescript
    export const myCommand: CommandHandler = (ctx) => {
      // Access agent via ctx.agent
@@ -119,6 +123,7 @@ From [LEARNINGS.md](LEARNINGS.md):
    ```
 
 2. Register the command in [src/cli/repl.ts](src/cli/repl.ts) in the `registerCommands()` method:
+
    ```typescript
    this.commandRegistry.register("/mycommand", myCommand);
    ```
@@ -126,11 +131,12 @@ From [LEARNINGS.md](LEARNINGS.md):
 3. Update the `/help` command in [src/cli/commands.ts](src/cli/commands.ts) to document your new command
 
 **Command handler signature:**
+
 ```typescript
 type CommandHandler = (context: CommandContext) => void | Promise<void>;
 
 interface CommandContext {
-  agent: Agent;  // Access to agent instance for history, tools, etc.
+  agent: Agent; // Access to agent instance for history, tools, etc.
 }
 ```
 
@@ -153,3 +159,19 @@ this.commandRegistry.register("/history", historyCommand);
 **Modifying existing commands:**
 
 Simply edit the command handler in [src/cli/commands.ts](src/cli/commands.ts). All commands are exported as named exports (`exitCommand`, `clearCommand`, `helpCommand`, `infoCommand`).
+
+### Logging
+
+NEVER USE `console.log` or `console.error`
+Use functions defined in `utils/logger` to log to a log file.
+
+What's defined:
+
+```ts
+export const log = (message: string, level?: string) =>
+  logger.log(message, level);
+export const logInfo = (message: string) => logger.info(message);
+export const logError = (message: string) => logger.error(message);
+export const logDebug = (message: string) => logger.debug(message);
+export const logWarn = (message: string) => logger.warn(message);
+```

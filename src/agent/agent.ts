@@ -2,6 +2,7 @@ import { type LLM, type Message } from "../llm/types";
 import { type Tool } from "../tools/types";
 import * as fs from "fs/promises";
 import * as path from "path";
+import { logDebug } from "../utils/logger";
 
 export class Agent {
   private conversationHistory: Message[] = [];
@@ -13,6 +14,7 @@ export class Agent {
     private tools: Tool<any, any>[],
     private systemPrompt: string
   ) {
+    logDebug("Agent initialized with system prompt: " + systemPrompt);
     // Initialize with system prompt
     this.addToHistory({
       role: "system",
@@ -99,6 +101,8 @@ export class Agent {
   }
 
   async run(userInput: string): Promise<string> {
+    logDebug(`Running agent with user input: ${userInput}`);
+
     // Add user message to history
     this.addToHistory({
       role: "user",
@@ -135,12 +139,20 @@ export class Agent {
         parameters,
       };
     });
+    logDebug("Tool schemas prepared: " + JSON.stringify(toolSchemas));
 
     while (true) {
+      logDebug(
+        "Calling LLM with current conversation history: " +
+          JSON.stringify(this.conversationHistory)
+      );
+
       const llmResult = await this.callLLMWithRetry(
         this.conversationHistory,
         toolSchemas
       );
+
+      logDebug("LLM call result: " + JSON.stringify(llmResult));
 
       // Handle LLM failure
       if (!llmResult.success) {
@@ -151,8 +163,6 @@ export class Agent {
           role: "assistant",
           content: errorMessage,
         });
-
-        await this.saveFullHistory();
 
         return errorMessage;
       }
@@ -185,10 +195,20 @@ export class Agent {
           const parsed = tool.schema.parse(args);
 
           // Execute tool with retry logic
+          logDebug(
+            `Executing tool ${tool.name} with arguments: ${JSON.stringify(
+              parsed
+            )}`
+          );
+
           const result = await this.executeToolWithRetry(
             tool,
             parsed,
             toolCall.id
+          );
+
+          logDebug(
+            `Tool ${tool.name} execution result: ${JSON.stringify(result)}`
           );
 
           // Add the tool result with the tool_call_id
@@ -199,8 +219,6 @@ export class Agent {
             tool_call_id: toolCall.id,
           });
         }
-
-        await this.saveFullHistory();
       } else {
         // Add assistant response to history
         this.addToHistory({
@@ -208,51 +226,8 @@ export class Agent {
           content: response.content,
         });
 
-        await this.saveFullHistory();
-
         return response.content;
       }
-    }
-  }
-
-  /**
-   * Save full conversation history to file for debugging
-   */
-  private async saveFullHistory(): Promise<void> {
-    try {
-      const historyText = this.fullHistory
-        .map((msg, index) => {
-          const header = `[${index}] ${msg.role.toUpperCase()}`;
-          let content = `Content: ${msg.content}`;
-
-          if (msg.tool_calls) {
-            content += `\nTool Calls: ${JSON.stringify(
-              msg.tool_calls,
-              null,
-              2
-            )}`;
-          }
-
-          if (msg.tool_call_id) {
-            content += `\nTool Call ID: ${msg.tool_call_id}`;
-          }
-
-          if (msg.name) {
-            content += `\nTool Name: ${msg.name}`;
-          }
-
-          return `${header}\n${content}\n${"=".repeat(80)}`;
-        })
-        .join("\n\n");
-
-      await fs.writeFile(
-        path.join(process.cwd(), "last_chat.txt"),
-        historyText,
-        "utf-8"
-      );
-    } catch (error) {
-      // Silently fail - don't break the chat if file writing fails
-      console.error("Failed to save chat history:", error);
     }
   }
 
